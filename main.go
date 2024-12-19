@@ -24,6 +24,8 @@ func usage() {
 func main() {
 
 	disableBan := flag.Bool("disable-ban", false, "Disable the ban functionality")
+	hit404threshold := flag.Int("hit-404-threshold", 50, "Threshold for 404 hits before taking action")
+	banDurantionInMinutes := flag.Int("ban-duration-in-minutes", 1, "Threshold for 404 hits before taking action")
 
 	flag.Usage = usage
 	flag.Parse()
@@ -44,7 +46,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to parse backend URL: %v", err)
 	}
-	serve(backendURL, *disableBan)
+	serve(backendURL, *disableBan, *hit404threshold, *banDurantionInMinutes)
 
 	wg.Wait()
 }

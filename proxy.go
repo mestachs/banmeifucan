@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -90,15 +91,18 @@ func (t *IPTracker) UnbanAll() {
 	log.Println("All IPs have been unbanned.")
 }
 
-func serve(backendURL *url.URL, disableBan bool) {
+func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDurantionInMinutes int) {
 	defer wg.Done()
 
-	tracker := NewIPTracker(50, 1*time.Minute) // Ban after x 404s, ban lasts 1 minute
+	tracker := NewIPTracker(hit404threshold, time.Duration(banDurantionInMinutes)*time.Minute) // Ban after x 404s, ban lasts 1 minute
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		ip := r.Header.Get("X-Forwarded-For")
 		if ip == "" {
 			ip, _, _ = net.SplitHostPort(r.RemoteAddr) // Extract the IP without the port
+		} else {
+			// apparently X-Forwarded-For: <client>, <proxy1> we want to only keep the first value
+			ip = strings.TrimSpace(strings.Split(ip, ",")[0])
 		}
 		hits := tracker.GetHits(ip)
 
@@ -140,7 +144,7 @@ func serve(backendURL *url.URL, disableBan bool) {
 		w.Write([]byte("All IPs have been unbanned."))
 	})
 
-	log.Printf("Reverse proxy is running on :8000 for %s", backendURL)
+	log.Printf("Reverse proxy is running on :8000 for %s, hit404threshold=%v, banDurantionInMinutes=%v", backendURL, hit404threshold, banDurantionInMinutes)
 	if err := http.ListenAndServe(":8000", nil); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
