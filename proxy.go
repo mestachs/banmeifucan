@@ -88,8 +88,8 @@ func (t *IPTracker) GetTrackerInfo() map[string]interface{} {
 		fmt.Println("Error fetching system memory info:", err)
 	}
 
-	totalMemoryMB := stats.Totalram * uint64(stats.Unit) / (1024 * 1024)
-	freeMemoryMB := stats.Freeram * uint64(stats.Unit) / (1024 * 1024)
+	totalMemoryMB := uint64(stats.Totalram) * uint64(stats.Unit) / (1024 * 1024)
+	freeMemoryMB := uint64(stats.Freeram) * uint64(stats.Unit) / (1024 * 1024)
 	usedMemoryMB := totalMemoryMB - freeMemoryMB
 
 	return map[string]interface{}{
