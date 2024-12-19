@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 type IPTracker struct {
@@ -77,10 +80,25 @@ func (t *IPTracker) GetHits(ip string) int {
 func (t *IPTracker) GetTrackerInfo() map[string]interface{} {
 	t.mu.Lock()
 	defer t.mu.Unlock()
+
+	var stats unix.Sysinfo_t
+
+	err := unix.Sysinfo(&stats)
+	if err != nil {
+		fmt.Println("Error fetching system memory info:", err)
+	}
+
+	totalMemoryMB := stats.Totalram * uint64(stats.Unit) / (1024 * 1024)
+	freeMemoryMB := stats.Freeram * uint64(stats.Unit) / (1024 * 1024)
+	usedMemoryMB := totalMemoryMB - freeMemoryMB
+
 	return map[string]interface{}{
-		"hits":             t.hits,
-		"banned":           t.banned,
-		"statusCountPerIp": t.statusCountPerIp,
+		"hits":                 t.hits,
+		"banned":               t.banned,
+		"statusCountPerIp":     t.statusCountPerIp,
+		"system.totalMemoryMB": totalMemoryMB,
+		"system.freeMemoryMB":  freeMemoryMB,
+		"system.usedMemoryMB":  usedMemoryMB,
 	}
 }
 

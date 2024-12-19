@@ -2,7 +2,22 @@
 
 Think [dockerize](https://github.com/jwilder/dockerize) but for a proxy to ban undesired traffic (too much 404 for the moment)
 
-# dev
+
+# Motivation
+
+We had that small server getting scanned over and over, leading to downtime, extra usage,... 
+For a nodejs app we didn't code, and really didn't know all the inner details.
+
+We tried various thing but not something really fitting this basic use case 
+ - a bot come in scan tons of url triggering plenty of 404 
+ - sometimes triggering some endpoint that were calling a db or a redis, taking a bit more resource/time to answer 404
+
+It's hard to say if these bot are all malcious or just "crawling" the internet but some clearly were bad one.
+
+
+# Dev
+
+## Local development
 
 ```
 go build -o reverse_proxy .
@@ -31,13 +46,16 @@ TODO
   - [x] make threshold and banDuration adjustable
   - [x] keep track of other errors status (409, 50x)- 
   - [ ] allow whitelist
+  - [ ] allow predefined rules (ban .env, php, java,...)
   - [ ] detect if ip is from a hosting
     - AWS : https://ip-ranges.amazonaws.com/ip-ranges.json
     - GCP : https://www.gstatic.com/ipranges/cloud.json
     - list of other hosting services : https://github.com/femueller/cloud-ip-ranges/tree/master
 
 
-# goreleaser
+## Release
+
+to release, I setuped [goreleaser](https://goreleaser.com/quick-start/) so artifacts end up in released package of the repo
 
 ```
 git tag -a v0.1.1 -m "Second release"
