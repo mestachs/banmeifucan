@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/url"
 	"os"
@@ -17,17 +18,23 @@ var (
 	disableBan bool
 )
 
-func usage() {
-	println(`Usage: reverse_proxy [options] [command] `)
-}
-
 func main() {
 
-	disableBan := flag.Bool("disable-ban", false, "Disable the ban functionality")
+	disableBan := flag.Bool("disable-ban", false, "Disable the ban functionality just to audit the behaviour")
 	hit404threshold := flag.Int("hit-404-threshold", 50, "Threshold for 404 hits before taking action")
 	banDurantionInMinutes := flag.Int("ban-duration-in-minutes", 1, "Threshold for 404 hits before taking action")
 
-	flag.Usage = usage
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s: %s\n", os.Args[0], "followed by some option flags and the command to launch/proxy")
+		flag.PrintDefaults() // Print the default flag descriptions
+	}
+
+	if len(os.Args) == 1 {
+		fmt.Println("No flags provided. See usage below:")
+		flag.Usage()
+		os.Exit(1)
+	}
+
 	flag.Parse()
 	log.Print("starting")
 	// Setup context
