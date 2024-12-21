@@ -77,6 +77,38 @@ func (t *IPTracker) GetHits(ip string) int {
 	return t.hits[ip]
 }
 
+func getDiskUsage(path string) string {
+	// Create a Statfs_t struct
+	var stat unix.Statfs_t
+
+	// Get file system stats for the given path
+	err := unix.Statfs(path, &stat)
+	if err != nil {
+		return ""
+	}
+
+	// Calculate total, free, used, and available space in bytes
+	total := stat.Blocks * uint64(stat.Bsize)
+	free := stat.Bfree * uint64(stat.Bsize)
+	available := stat.Bavail * uint64(stat.Bsize)
+	used := total - free
+
+	// Convert to megabytes
+	totalMB := total / (1024 * 1024)
+	usedMB := used / (1024 * 1024)
+	availableMB := available / (1024 * 1024)
+	freeMB := free / (1024 * 1024)
+
+	// Calculate percentage of used space
+	percentUsed := (float64(used) / float64(total)) * 100
+
+	// Format the output
+	return fmt.Sprintf(
+		"Path: %s Total: %d MB Used: %d MB (%.2f%%) Available: %d MB Free: %d MB",
+		path, totalMB, usedMB, percentUsed, availableMB, freeMB,
+	)
+}
+
 func (t *IPTracker) GetTrackerInfo() map[string]interface{} {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -92,6 +124,23 @@ func (t *IPTracker) GetTrackerInfo() map[string]interface{} {
 	freeMemoryMB := uint64(stats.Freeram) * uint64(stats.Unit) / (1024 * 1024)
 	usedMemoryMB := totalMemoryMB - freeMemoryMB
 
+	// Convert uptime (in seconds) to a human-readable format
+	uptimeSeconds := int(stats.Uptime)
+	days := uptimeSeconds / 86400
+	hours := (uptimeSeconds % 86400) / 3600
+	minutes := (uptimeSeconds % 3600) / 60
+	seconds := uptimeSeconds % 60
+	var uptime = fmt.Sprintf("%dd %02dh %02dm %02ds", days, hours, minutes, seconds)
+
+	// Extract and scale the load averages
+	load1 := float64(stats.Loads[0]) / 65536.0
+	load5 := float64(stats.Loads[1]) / 65536.0
+	load15 := float64(stats.Loads[2]) / 65536.0
+
+	// Format the load averages
+	var loadAverage = fmt.Sprintf("1-min: %.2f, 5-min: %.2f, 15-min: %.2f", load1, load5, load15)
+	var usage = getDiskUsage("/")
+
 	return map[string]interface{}{
 		"hits":                 t.hits,
 		"banned":               t.banned,
@@ -99,6 +148,9 @@ func (t *IPTracker) GetTrackerInfo() map[string]interface{} {
 		"system.totalMemoryMB": totalMemoryMB,
 		"system.freeMemoryMB":  freeMemoryMB,
 		"system.usedMemoryMB":  usedMemoryMB,
+		"system.uptime":        uptime,
+		"system.loadAverage":   loadAverage,
+		"system.diskUsage":     usage,
 	}
 }
 
