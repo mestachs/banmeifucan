@@ -17,6 +17,8 @@ func TestCleanPath(t *testing.T) {
 		{"/dataElements/j38fk2dKFsG", "/dataElements/{id}"},
 		{"/dataElements/DefcVaeGtKu", "/dataElements/DefcVaeGtKu"}, // sadly some dhis uuid don't workd
 		{"/dataElements/AGrHLpmpgqI", "/dataElements/{id}"},
+		{"/submission/max-size/A0ST0qwp", "/submission/max-size/{id}"},
+		{"/single/9ahTsRs2", "/single/{id}"},
 		{"/organisationUnits/BV4IomHvri4", "/organisationUnits/{id}"},
 		{"/projects/2", "/projects/{id}"},
 		{"/export_requests/2", "/export_requests/{id}"},

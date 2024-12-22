@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"sync"
@@ -13,6 +14,7 @@ var (
 	uuidPattern       = "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}" // UUID pattern
 	longIntPattern    = `\d+`                                                                 // Match long integers
 	dhis2UidPattern   = `[a-zA-Z]{1}[a-zA-Z0-9]{10}`                                          // DHIS2 UID pattern (alphanumeric)
+	enketoUidPattern  = `[a-zA-Z0-9]{8}`                                                      // enketo pattern (alphanumeric)
 	compiledRegex     *regexp.Regexp
 	compiledRegexOnce sync.Once
 )
@@ -21,8 +23,9 @@ var (
 func getCompiledRegex() *regexp.Regexp {
 	compiledRegexOnce.Do(func() {
 		// Combine the patterns into a single regular expression
-		combinedPattern := fmt.Sprintf("^(%s|%s|%s)$", uuidPattern, longIntPattern, dhis2UidPattern)
+		combinedPattern := fmt.Sprintf("^(%s|%s|%s|%s)$", uuidPattern, longIntPattern, enketoUidPattern, dhis2UidPattern)
 		var err error
+		log.Printf("{id} identification pattern %s", combinedPattern)
 		compiledRegex, err = regexp.Compile(combinedPattern)
 		if err != nil {
 			panic("failed to compile regex: " + err.Error())
@@ -32,10 +35,10 @@ func getCompiledRegex() *regexp.Regexp {
 }
 
 // CommonPrefixes contains some common prefixes found in human-readable strings
-var CommonPrefixes = []string{"data", "user", "file", "element", "info", "image", "content", "user", "name"}
+var CommonPrefixes = []string{"data", "user", "file", "element", "info", "image", "content", "user", "name", "proj"}
 
 // CommonSuffixes contains some common suffixes found in human-readable strings
-var CommonSuffixes = []string{"ing", "ed", "able", "ment", "tion", "ness", "ize"}
+var CommonSuffixes = []string{"ing", "ed", "able", "ment", "tion", "ness", "ize", "ers"}
 
 // IsCamelCase checks if a string follows CamelCase or PascalCase
 func IsCamelCase(s string) bool {
@@ -118,9 +121,8 @@ func CleanPath(path string) string {
 	segments := strings.Split(path, "/")
 
 	for i, segment := range segments {
-		// If the segment matches an ID pattern, replace it with {id}
 		if re.MatchString(segment) {
-			if len(segments[i]) == 11 {
+			if len(segment) == 11 || len(segment) == 8 {
 				check := CheckStringPattern(segment)
 				if !check {
 					segments[i] = "{id}"
