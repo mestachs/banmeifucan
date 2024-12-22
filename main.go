@@ -23,6 +23,7 @@ func main() {
 	disableBan := flag.Bool("disable-ban", false, "Disable the ban functionality just to audit the behaviour")
 	hit404threshold := flag.Int("hit-404-threshold", 50, "Threshold for 404 hits before taking action")
 	banDurantionInMinutes := flag.Int("ban-duration-in-minutes", 1, "Threshold for 404 hits before taking action")
+	modifyHost := flag.Bool("modify-host", false, "modify the Host in url based on BACKEND_URL")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s: %s\n", os.Args[0], "followed by some option flags and the command to launch/proxy")
@@ -53,7 +54,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to parse backend URL: %v", err)
 	}
-	serve(backendURL, *disableBan, *hit404threshold, *banDurantionInMinutes)
+	serve(backendURL, *disableBan, *hit404threshold, *banDurantionInMinutes, *modifyHost)
 
 	wg.Wait()
 }

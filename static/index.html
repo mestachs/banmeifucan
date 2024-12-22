@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ban Me</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 20px;
+        background-color: #f9f9f9;
+        color: #333;
+        line-height: 1;
+        font-size: 12px;
+      }
+      /* Styling to align tables side by side */
+      .row {
+        display: flex;
+        gap: 20px;
+        justify-content: space-between;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      input {
+        margin-bottom: 4px;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid black;
+      }
+      th,
+      td {
+        padding: 8px;
+        text-align: left;
+        height: 12px;
+      }
+      tr {
+        height: 12px;
+      }
+      .search-row {
+        margin-top: 20px;
+      }
+      th {
+        background-color: #f4f4f4;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+
+      tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+
+      tr:hover {
+        background-color: #f1f1f1;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="app.js"></script>
+
+    <div class="row">
+      <pre id="info-banned"></pre>
+    </div>
+    <div class="row">
+      <table id="info-system">
+        <tr>
+          <th>Key</th>
+          <th>Value</th>
+        </tr>
+      </table>
+      <table id="info-percentiles">
+        <tr>
+          <th>Key</th>
+          <th>Value</th>
+        </tr>
+      </table>
+      <div>
+        <pre id="ascii-chart"></pre><br>
+        <label for="autorefresh">
+          <input type="checkbox" id="autorefresh" name="autorefresh" checked />
+          Autorefresh
+        </label>
+      </div>
+    </div>
+
+    <div class="search-row">
+      <label for="search-path">Filter Paths: </label>
+      <input type="text" id="search-path" placeholder="Type to filter..." />
+      <table id="info-percentiles-by-path">
+        <tr>
+          <th>Path</th>
+        </tr>
+      </table>
+    </div>
+    <br />
+    <table id="info-status-by-ip">
+      <tr>
+        <th>Ip</th>
+      </tr>
+    </table>
+    <pre id="banme-info" style="display: none"></pre>
+  </body>
+</html>
