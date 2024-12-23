@@ -22,12 +22,13 @@ function toTables(keyPrefix, htmlElement, data, excludedKeys) {
 // Populate the filterable table
 function populateFilterableTable(table, paths, bucketTimes) {
   table.innerHTML =
-    "<tr><th>Path</th><th>Percentile 50</th><th>Percentile 95</th><th>Percentile 98</th><th>Percentile 99</th><th>Counts</th></tr>"; // Reset table header
-
+    "<thead><tr><th>Path</th><th>Percentile 50</th><th>Percentile 95</th><th>Percentile 98</th><th>Percentile 99</th><th>Counts</th></tr></thead>"; // Reset table header
+    const tbody = document.createElement("tbody");
+    const tbodyElement =table.appendChild(tbody);   
   for (let path of Object.keys(paths)) {
     const stats = paths[path];
 
-    const row = table.insertRow();
+    const row = tbodyElement.insertRow();
     row.addEventListener("click", () => {
       drawHistogram(bucketTimes, stats["counts"], path);
     });
@@ -116,17 +117,29 @@ async function fetchAndDisplayInfo() {
     const columns = ["ip"].concat(statuses);
 
     ipsElement.innerHTML =
-      "<tr>" + columns.map((s) => "<th>" + s + "</th>").join(" ") + "</tr>";
-    
+      "<thead><tr>" + columns.map((s) => "<th>" + s + "</th>").join(" ") + "</tr></thead>";
+
     const listOfIps = Object.keys(data.statusCountPerIp).sort((a, b) => {
-        const num1 = Number(a.split(".").map((num) => (`000${num}`).slice(-3) ).join(""));
-        const num2 = Number(b.split(".").map((num) => (`000${num}`).slice(-3) ).join(""));
-        return num1-num2;
+      const num1 = Number(
+        a
+          .split(".")
+          .map((num) => `000${num}`.slice(-3))
+          .join("")
+      );
+      const num2 = Number(
+        b
+          .split(".")
+          .map((num) => `000${num}`.slice(-3))
+          .join("")
+      );
+      return num1 - num2;
     });
+    const tbody = document.createElement("tbody");
+    const ipsElementTbody =ipsElement.appendChild(tbody);    
     for (let ip of listOfIps) {
       const stats = data.statusCountPerIp[ip];
 
-      const row = ipsElement.insertRow();
+      const row = ipsElementTbody.insertRow();
       const others = statuses
         .map((s) => stats[s])
         .map((r) => `<td>${r == undefined ? "" : r}</td>`);
@@ -136,9 +149,67 @@ async function fetchAndDisplayInfo() {
     // Display the data in an element with ID 'info'.
     const infoElement = document.getElementById("banme-info");
     infoElement.textContent = JSON.stringify(data, null, 2);
+
+    makeTablesSortable()
   } catch (error) {
     console.error("Error fetching info:", error);
   }
+}
+
+// Generic table sorting function
+function makeTablesSortable() {
+  const tables = document.querySelectorAll(".sortable");
+
+  tables.forEach((table) => {
+    const headers = table.querySelectorAll("th");
+    headers.forEach((header, columnIndex) => {
+      header.addEventListener("click", () => {
+        sortTable(table, columnIndex);
+        updateSortIndicators(header, headers);
+      });
+    });
+  });
+}
+
+function sortTable(table, columnIndex) {
+  const tbody = table.tBodies[0];
+  const rows = Array.from(tbody.rows);
+
+  // Determine the current sorting order
+  const currentOrder = table.dataset.sortOrder || "asc";
+  const isAscending = currentOrder === "desc";
+  table.dataset.sortOrder = isAscending ? "asc" : "desc";
+
+  // Sort rows
+  rows.sort((rowA, rowB) => {
+    const cellA = rowA.cells[columnIndex].textContent.trim();
+    const cellB = rowB.cells[columnIndex].textContent.trim();
+
+    // Numeric sorting if both cells are numbers
+    if (!isNaN(cellA) && !isNaN(cellB)) {
+      return isAscending ? cellA - cellB : cellB - cellA;
+    }
+
+    // Text sorting
+    return isAscending
+      ? cellA.localeCompare(cellB)
+      : cellB.localeCompare(cellA);
+  });
+
+  // Append sorted rows back to the tbody
+  rows.forEach((row) => tbody.appendChild(row));
+}
+
+function updateSortIndicators(clickedHeader, allHeaders) {
+  allHeaders.forEach((header) =>
+    header.classList.remove("sort-asc", "sort-desc")
+  );
+  clickedHeader.classList.add(
+    clickedHeader.parentElement.parentElement.parentElement.dataset
+      .sortOrder === "asc"
+      ? "sort-asc"
+      : "sort-desc"
+  );
 }
 
 // Refresh the info every 5 seconds.

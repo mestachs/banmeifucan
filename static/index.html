@@ -56,6 +56,12 @@
       tr:hover {
         background-color: #f1f1f1;
       }
+      th.sort-asc::after {
+            content: " ▲";
+        }
+        th.sort-desc::after {
+            content: " ▼";
+        }      
     </style>
   </head>
   <body>
@@ -80,8 +86,8 @@
       <div>
         <pre id="ascii-chart"></pre><br>
         <label for="autorefresh">
-          <input type="checkbox" id="autorefresh" name="autorefresh" checked />
-          Autorefresh
+          <input type="checkbox" id="autorefresh" name="autorefresh" />
+          Auto-refresh
         </label>
       </div>
     </div>
@@ -89,14 +95,14 @@
     <div class="search-row">
       <label for="search-path">Filter Paths: </label>
       <input type="text" id="search-path" placeholder="Type to filter..." />
-      <table id="info-percentiles-by-path">
+      <table id="info-percentiles-by-path" class="sortable">
         <tr>
           <th>Path</th>
         </tr>
       </table>
     </div>
     <br />
-    <table id="info-status-by-ip">
+    <table id="info-status-by-ip"  class="sortable">
       <tr>
         <th>Ip</th>
       </tr>
