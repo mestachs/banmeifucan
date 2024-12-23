@@ -43,6 +43,8 @@ ali http://127.0.0.1:8000/fonts/456454
 TODO
   - [x]test it on a real server ;)
   - [ ] add a token to unban
+  - [x] add a small dashboard
+  - [x] add tracking of percentiles by path (handle rest api in a certain form)
   - [x] make threshold and banDuration adjustable
   - [x] keep track of other errors status (409, 50x)- 
   - [ ] allow whitelist

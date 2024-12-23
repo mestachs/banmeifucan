@@ -117,8 +117,13 @@ async function fetchAndDisplayInfo() {
 
     ipsElement.innerHTML =
       "<tr>" + columns.map((s) => "<th>" + s + "</th>").join(" ") + "</tr>";
-
-    for (let ip of Object.keys(data.statusCountPerIp)) {
+    
+    const listOfIps = Object.keys(data.statusCountPerIp).sort((a, b) => {
+        const num1 = Number(a.split(".").map((num) => (`000${num}`).slice(-3) ).join(""));
+        const num2 = Number(b.split(".").map((num) => (`000${num}`).slice(-3) ).join(""));
+        return num1-num2;
+    });
+    for (let ip of listOfIps) {
       const stats = data.statusCountPerIp[ip];
 
       const row = ipsElement.insertRow();
