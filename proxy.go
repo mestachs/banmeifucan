@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/sys/unix"
@@ -132,6 +133,12 @@ func (pps *PerPathStats) GetAllPercentiles() map[string]map[string]interface{} {
 
 		percentiles["totalTime"] = stats.totalTime
 		percentiles["totalCount"] = sumArray(stats.bucketCounts)
+
+		stats, _ := activeConnections.LoadOrStore(path, &connectionStats{})
+		connStats := stats.(*connectionStats)
+
+		percentiles["active"] = atomic.LoadInt64(&connStats.activeConnections)
+		percentiles["maxActive"] = atomic.LoadInt64(&connStats.maxConnections)
 
 		result[path] = percentiles
 	}
@@ -285,17 +292,15 @@ func (t *IPTracker) UnbanAll() {
 	log.Println("All IPs have been unbanned.")
 }
 
+type connectionStats struct {
+	activeConnections int64
+	maxConnections    int64
+}
+
+var activeConnections sync.Map
+
 func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDurantionInMinutes int, modifyHost bool) {
 	defer wg.Done()
-
-	// List all embedded files.
-	fs.WalkDir(staticFiles, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		fmt.Println("Embedded file:", path)
-		return nil
-	})
 
 	tracker := NewIPTracker(hit404threshold, time.Duration(banDurantionInMinutes)*time.Minute) // Ban after x 404s, ban lasts 1 minute
 
@@ -312,7 +317,7 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 		if ip == "" {
 			ip, _, _ = net.SplitHostPort(r.RemoteAddr) // Extract the IP without the port
 		} else {
-			// apparently X-Forwarded-For: <client>, <proxy1> we want to only keep the first value
+			// apparently X-Forwarded-For: <client>, <		stats, _ := activeConnections.LoadOrStore(cleanedPath, &connectionStats{})
 			ip = strings.TrimSpace(strings.Split(ip, ",")[0])
 		}
 
@@ -330,6 +335,27 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 			r.Host = backendURL.Host
 
 		}
+
+		cleanedPath := CleanPath(r.URL.Path)
+		stats, _ := activeConnections.LoadOrStore(cleanedPath, &connectionStats{})
+		connStats := stats.(*connectionStats)
+
+		// Increment the active connections for the path
+		atomic.AddInt64(&connStats.activeConnections, 1)
+
+		// Update the max active connections if necessary
+		for {
+			currentMax := atomic.LoadInt64(&connStats.maxConnections)
+			if connStats.activeConnections > currentMax {
+				// Attempt to update max active connections atomically
+				if atomic.CompareAndSwapInt64(&connStats.maxConnections, currentMax, connStats.activeConnections) {
+					break
+				}
+			} else {
+				break
+			}
+		}
+
 		reverseProxy := httputil.NewSingleHostReverseProxy(backendURL)
 		reverseProxy.ModifyResponse = func(resp *http.Response) error {
 			if resp.StatusCode == http.StatusNotFound {
@@ -340,12 +366,14 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 			hits := tracker.GetHits(ip)
 			duration := time.Since(start).Seconds()
 
-			stats := perPathStats.GetStatsForPath(CleanPath(r.URL.Path))
+			stats := perPathStats.GetStatsForPath(cleanedPath)
 			stats.Record(duration)
 
 			bucketStats.Record(duration)
 
-			log.Printf("Access log: method=%s url=%s ip=%s hits=%d status=%v duration=%.3f", r.Method, r.URL.String(), ip, hits, resp.StatusCode, duration)
+			log.Printf("Access log: method=%s url=%s ip=%s hits=%d status=%v duration=%.3f active=%v", r.Method, r.URL.String(), ip, hits, resp.StatusCode, duration, atomic.LoadInt64(&connStats.activeConnections))
+
+			atomic.AddInt64(&connStats.activeConnections, -1)
 			return nil
 		}
 		reverseProxy.ServeHTTP(w, r)

@@ -24,6 +24,8 @@ function populateFilterableTable(table, paths, bucketTimes) {
   table.innerHTML = [
     "<thead><tr>",
     "<th>Path</th>",
+    "<th>Active in //</th>",
+    "<th>Max Active in //</th>",
     "<th>Total Count</th>",
     "<th>Total Time</th>",
     "<th>Percentile 50</th>",
@@ -44,6 +46,8 @@ function populateFilterableTable(table, paths, bucketTimes) {
     });
     row.innerHTML = [
       `<td>${path}</td>`,
+      `<td>${stats["active"]}</td>`,
+      `<td>${stats["maxActive"]}</td>`,
       `<td>${stats["totalCount"]}</td>`,
       `<td>${stats["totalTime"]}</td>`,
       `<td>${stats["50"]}</td>`,
