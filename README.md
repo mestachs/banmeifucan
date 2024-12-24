@@ -60,6 +60,7 @@ TODO
 to release, I setuped [goreleaser](https://goreleaser.com/quick-start/) so artifacts end up in released package of the repo
 
 ```
+git describe --tags --abbrev=0
 export NEW_TAG=v0.1.5
 git tag -a $NEW_TAG -m "Second release"
 git push origin $NEW_TAG
