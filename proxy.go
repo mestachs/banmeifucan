@@ -27,6 +27,7 @@ type BucketStats struct {
 	buckets      []float64 // Upper bounds for buckets
 	bucketCounts []int     // Counts for each bucket
 	totalCalls   int       // Total calls
+	totalTime    float64
 	mutex        sync.Mutex
 }
 
@@ -35,6 +36,7 @@ func NewBucketStats(bucketBounds []float64) *BucketStats {
 	return &BucketStats{
 		buckets:      bucketBounds,
 		bucketCounts: make([]int, len(bucketBounds)+1), // +1 for overflow bucket
+		totalTime:    0.0,
 	}
 }
 
@@ -42,6 +44,7 @@ func NewBucketStats(bucketBounds []float64) *BucketStats {
 func (bs *BucketStats) Record(duration float64) {
 	bs.mutex.Lock()
 	defer bs.mutex.Unlock()
+	bs.totalTime += duration
 
 	for i, upperBound := range bs.buckets {
 		if duration <= upperBound {
@@ -106,6 +109,14 @@ func (pps *PerPathStats) GetStatsForPath(path string) *BucketStats {
 	return pps.stats[path]
 }
 
+func sumArray(arr []int) int64 {
+	var sum int64
+	for _, value := range arr {
+		sum += int64(value)
+	}
+	return sum
+}
+
 func (pps *PerPathStats) GetAllPercentiles() map[string]map[string]interface{} {
 	result := make(map[string]map[string]interface{})
 
@@ -118,6 +129,9 @@ func (pps *PerPathStats) GetAllPercentiles() map[string]map[string]interface{} {
 		percentiles["99"] = stats.GetPercentile(99)
 
 		percentiles["counts"] = stats.bucketCounts
+
+		percentiles["totalTime"] = stats.totalTime
+		percentiles["totalCount"] = sumArray(stats.bucketCounts)
 
 		result[path] = percentiles
 	}
@@ -346,6 +360,8 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 		info["percentiles.95"] = bucketStats.GetPercentile(95)
 		info["percentiles.98"] = bucketStats.GetPercentile(98)
 		info["percentiles.99"] = bucketStats.GetPercentile(99)
+		info["percentiles.totalTime"] = bucketStats.totalTime
+		info["percentiles.totalCount"] = sumArray(bucketStats.bucketCounts)
 
 		info["percentiles.byPath"] = perPathStats.GetAllPercentiles()
 

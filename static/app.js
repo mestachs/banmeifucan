@@ -21,10 +21,20 @@ function toTables(keyPrefix, htmlElement, data, excludedKeys) {
 
 // Populate the filterable table
 function populateFilterableTable(table, paths, bucketTimes) {
-  table.innerHTML =
-    "<thead><tr><th>Path</th><th>Percentile 50</th><th>Percentile 95</th><th>Percentile 98</th><th>Percentile 99</th><th>Counts</th></tr></thead>"; // Reset table header
-    const tbody = document.createElement("tbody");
-    const tbodyElement =table.appendChild(tbody);   
+  table.innerHTML = [
+    "<thead><tr>",
+    "<th>Path</th>",
+    "<th>Total Count</th>",
+    "<th>Total Time</th>",
+    "<th>Percentile 50</th>",
+    "<th>Percentile 95</th>",
+    "<th>Percentile 98</th>",
+    "<th>Percentile 99</th>",
+    "<th>Counts</th>",
+    "</tr></thead>",
+  ].join(""); // Reset table header
+  const tbody = document.createElement("tbody");
+  const tbodyElement = table.appendChild(tbody);
   for (let path of Object.keys(paths)) {
     const stats = paths[path];
 
@@ -32,11 +42,16 @@ function populateFilterableTable(table, paths, bucketTimes) {
     row.addEventListener("click", () => {
       drawHistogram(bucketTimes, stats["counts"], path);
     });
-    row.innerHTML = `<td>${path}</td><td>${stats["50"]}</td><td>${
-      stats["95"]
-    }</td><td>${stats["98"]}</td><td>${stats["99"]}</td><td>${JSON.stringify(
-      stats["counts"]
-    )}</td>`;
+    row.innerHTML = [
+      `<td>${path}</td>`,
+      `<td>${stats["totalCount"]}</td>`,
+      `<td>${stats["totalTime"]}</td>`,
+      `<td>${stats["50"]}</td>`,
+      `<td>${stats["95"]}</td>`,
+      `<td>${stats["98"]}</td>`,
+      `<td>${stats["99"]}</td>`,
+      `<td>${JSON.stringify(stats["counts"])}</td>`,
+    ].join("");
   }
 }
 
@@ -117,7 +132,9 @@ async function fetchAndDisplayInfo() {
     const columns = ["ip"].concat(statuses);
 
     ipsElement.innerHTML =
-      "<thead><tr>" + columns.map((s) => "<th>" + s + "</th>").join(" ") + "</tr></thead>";
+      "<thead><tr>" +
+      columns.map((s) => "<th>" + s + "</th>").join(" ") +
+      "</tr></thead>";
 
     const listOfIps = Object.keys(data.statusCountPerIp).sort((a, b) => {
       const num1 = Number(
@@ -135,7 +152,7 @@ async function fetchAndDisplayInfo() {
       return num1 - num2;
     });
     const tbody = document.createElement("tbody");
-    const ipsElementTbody =ipsElement.appendChild(tbody);    
+    const ipsElementTbody = ipsElement.appendChild(tbody);
     for (let ip of listOfIps) {
       const stats = data.statusCountPerIp[ip];
 
@@ -150,7 +167,7 @@ async function fetchAndDisplayInfo() {
     const infoElement = document.getElementById("banme-info");
     infoElement.textContent = JSON.stringify(data, null, 2);
 
-    makeTablesSortable()
+    makeTablesSortable();
   } catch (error) {
     console.error("Error fetching info:", error);
   }
