@@ -62,6 +62,7 @@ to release, I setuped [goreleaser](https://goreleaser.com/quick-start/) so artif
 ```
 git describe --tags --abbrev=0
 export NEW_TAG=v0.1.5
+rm -rf ./dist
 git tag -a $NEW_TAG -m "Second release"
 git push origin $NEW_TAG
 GITHUB_TOKEN=.... goreleaser
