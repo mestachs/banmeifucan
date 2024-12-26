@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="./favicon.ico" type="image/x-icon" />
     <title>Ban Me</title>
     <style>
       body {
@@ -12,12 +13,22 @@
         color: #333;
         line-height: 1;
         font-size: 12px;
+        display: flex;
+        flex-direction: column;
       }
       /* Styling to align tables side by side */
       .row {
         display: flex;
         gap: 20px;
         justify-content: space-between;
+      }
+
+      /* Media query for small screens */
+      @media (max-width: 900px) {
+        .row {
+          flex-wrap: wrap; /* Ensures items wrap to the next line on small screens */
+          flex-direction: column; /* Stacks items vertically */
+        }
       }
       table {
         border-collapse: collapse;
@@ -52,16 +63,16 @@
       tr:nth-child(even) {
         background-color: #f9f9f9;
       }
-
+      flex-direction: column;
       tr:hover {
         background-color: #f1f1f1;
       }
       th.sort-asc::after {
-            content: " ▲";
-        }
-        th.sort-desc::after {
-            content: " ▼";
-        }      
+        content: " ▲";
+      }
+      th.sort-desc::after {
+        content: " ▼";
+      }
     </style>
   </head>
   <body>
@@ -84,7 +95,8 @@
         </tr>
       </table>
       <div>
-        <pre id="ascii-chart"></pre><br>
+        <pre id="ascii-chart"></pre>
+        <br />
         <label for="autorefresh">
           <input type="checkbox" id="autorefresh" name="autorefresh" />
           Auto-refresh
@@ -102,7 +114,7 @@
       </table>
     </div>
     <br />
-    <table id="info-status-by-ip"  class="sortable">
+    <table id="info-status-by-ip" class="sortable">
       <tr>
         <th>Ip</th>
       </tr>

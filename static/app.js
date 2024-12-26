@@ -28,10 +28,10 @@ function populateFilterableTable(table, paths, bucketTimes) {
     "<th>Max Active in //</th>",
     "<th>Total Count</th>",
     "<th>Total Time</th>",
-    "<th>Percentile 50</th>",
-    "<th>Percentile 95</th>",
-    "<th>Percentile 98</th>",
-    "<th>Percentile 99</th>",
+    "<th>P 50</th>",
+    "<th>P 95</th>",
+    "<th>P 98</th>",
+    "<th>P 99</th>",
     "<th>Counts</th>",
     "</tr></thead>",
   ].join(""); // Reset table header
@@ -132,7 +132,16 @@ async function fetchAndDisplayInfo() {
 
     const ipsElement = document.getElementById("info-status-by-ip");
 
-    const statuses = ["200", "201", "202", "304", "400", "403", "404", "500"];
+    const allStatuses = new Set()
+    for (let ip of Object.keys(data.statusCountPerIp)) {
+      const stats = data.statusCountPerIp[ip];
+      for (let status of Object.keys(stats)) {
+        allStatuses.add(status)
+      }
+    }
+
+    const statuses = Array.from(allStatuses)
+    statuses.sort();
     const columns = ["ip"].concat(statuses);
 
     ipsElement.innerHTML =
@@ -244,3 +253,9 @@ setInterval(() => {
 
 // Initial load.
 fetchAndDisplayInfo();
+
+const currentDomain = window.location.hostname; // For domain name only
+const currentURL = window.location.href;        // For full URL
+
+// Set the document title
+document.title = "Ban Me - "+currentDomain; // Use `currentURL` if you want the full URL
