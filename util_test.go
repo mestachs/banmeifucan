@@ -15,10 +15,11 @@ func TestCleanPath(t *testing.T) {
 		{"/organisUnits/15", "/organisUnits/{id}"},
 		{"/dataElement/j38fk2dKFsG", "/dataElement/{id}"},
 		{"/dataElements/j38fk2dKFsG", "/dataElements/{id}"},
-		{"/dataElements/DefcVaeGtKu", "/dataElements/DefcVaeGtKu"}, // sadly some dhis uuid don't workd
+		{"/dataElements/DefcVaeGtKu", "/dataElements/{id}"}, // sadly some dhis uuid don't workd
 		{"/dataElements/AGrHLpmpgqI", "/dataElements/{id}"},
 		{"/submission/max-size/A0ST0qwp", "/submission/max-size/{id}"},
 		{"/single/9ahTsRs2", "/single/{id}"},
+		{"/single/BahTsRsD", "/single/{id}"},
 		{"/organisationUnits/BV4IomHvri4", "/organisationUnits/{id}"},
 		{"/projects/2", "/projects/{id}"},
 		{"/export_requests/2", "/export_requests/{id}"},

@@ -33,4 +33,7 @@ jobs:
 
       # Run tests
       - name: Run tests
-        run: go test -v ./...
+        run: go test -coverprofile=coverage.out  -v ./...
+
+      - name: View coverage details
+        run: go tool cover -func=coverage.out

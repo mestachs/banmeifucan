@@ -69,6 +69,21 @@ func CheckCommonSuffixes(s string) bool {
 	return false
 }
 
+func countUpperAndLower(s string) (int, int) {
+	upperCount := 0
+	lowerCount := 0
+
+	for _, char := range s {
+		if unicode.IsUpper(char) {
+			upperCount++
+		} else if unicode.IsLower(char) {
+			lowerCount++
+		}
+	}
+
+	return upperCount, lowerCount
+}
+
 func containsLettersAndNumbers(s string) bool {
 	hasLetter := false
 	hasDigit := false
@@ -99,6 +114,13 @@ func CheckStringPattern(s string) bool {
 	if containsLettersAndNumbers(s) {
 		return false
 	}
+
+	upperCount, _ := countUpperAndLower(s)
+	upperLowerRatio := float64(upperCount) / float64(len(s))
+	if upperLowerRatio >= 0.35 {
+		return false
+	}
+
 	// Check if string is CamelCase or PascalCase
 	if IsCamelCase(s) {
 		return true

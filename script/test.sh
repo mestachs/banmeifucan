@@ -7,6 +7,7 @@ set -e  # Exit the script if any command fails
 
 go build -o reverse_proxy .
 
-go test
+go test -coverprofile=coverage.out
+go tool cover -func=coverage.out
 
 BACKEND_URL=http://localhost:8080 ./reverse_proxy -modify-host -disable-ban -hit-404-threshold 10 -ban-duration-in-minutes 1 python ./script/jitter.py

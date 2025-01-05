@@ -1,2 +1,3 @@
 reverse_proxy
 dist/
+coverage.out
