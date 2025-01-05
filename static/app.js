@@ -14,7 +14,7 @@ function toTables(keyPrefix, htmlElement, data, excludedKeys) {
   systemKeys.forEach((key) => {
     const row = htmlElement.insertRow();
     row.innerHTML = `<td>${key.replace(keyPrefix, "")}</td><td>${
-      data[key]
+      typeof data[key] === 'object' ? JSON.stringify(data[key]) : data[key]
     }</td>`;
   });
 }
@@ -28,18 +28,19 @@ function populateFilterableTable(table, paths, bucketTimes) {
     "<th>Max Active in //</th>",
     "<th>Total Count</th>",
     "<th>Total Time</th>",
-    "<th>P 50</th>",
-    "<th>P 95</th>",
-    "<th>P 98</th>",
-    "<th>P 99</th>",
-    "<th>Counts</th>",
-    "</tr></thead>",
-  ].join(""); // Reset table header
+    "<th class='nowrap'>P 50</th>",
+    "<th class='nowrap'>P 95</th>",
+    "<th class='nowrap'>P 98</th>",
+    "<th class='nowrap'>P 99</th>",
+  ]
+    .concat(bucketTimes.map((t) => "<th> R " + t + "</th>"))
+    .concat(["<th>Statuses</th>", "</tr></thead>"])
+    .join(""); // Reset table header
   const tbody = document.createElement("tbody");
   const tbodyElement = table.appendChild(tbody);
   for (let path of Object.keys(paths)) {
     const stats = paths[path];
-
+    debugger
     const row = tbodyElement.insertRow();
     row.addEventListener("click", () => {
       drawHistogram(bucketTimes, stats["counts"], path);
@@ -54,8 +55,12 @@ function populateFilterableTable(table, paths, bucketTimes) {
       `<td>${stats["95"]}</td>`,
       `<td>${stats["98"]}</td>`,
       `<td>${stats["99"]}</td>`,
-      `<td>${JSON.stringify(stats["counts"])}</td>`,
-    ].join("");
+    ]
+      .concat(stats["counts"].slice(0, stats["counts"].length - 1).map((c) => "<td>" + (c == 0 ? "" : c) + "</td>"))
+      .concat([
+        `<td>${JSON.stringify(stats["statusCount"])}</td>`,
+      ])
+      .join("");
   }
 }
 
@@ -113,7 +118,6 @@ async function fetchAndDisplayInfo() {
       data,
       ["percentiles.byPath"]
     );
-
     const bucketTimes = data["percentiles.buckets"];
 
     drawHistogram(bucketTimes, data["percentiles.bucketCounts"], "general");
@@ -132,15 +136,15 @@ async function fetchAndDisplayInfo() {
 
     const ipsElement = document.getElementById("info-status-by-ip");
 
-    const allStatuses = new Set()
+    const allStatuses = new Set();
     for (let ip of Object.keys(data.statusCountPerIp)) {
       const stats = data.statusCountPerIp[ip];
       for (let status of Object.keys(stats)) {
-        allStatuses.add(status)
+        allStatuses.add(status);
       }
     }
 
-    const statuses = Array.from(allStatuses)
+    const statuses = Array.from(allStatuses);
     statuses.sort();
     const columns = ["ip"].concat(statuses);
 
@@ -255,7 +259,7 @@ setInterval(() => {
 fetchAndDisplayInfo();
 
 const currentDomain = window.location.hostname; // For domain name only
-const currentURL = window.location.href;        // For full URL
+const currentURL = window.location.href; // For full URL
 
 // Set the document title
-document.title = "Ban Me - "+currentDomain; // Use `currentURL` if you want the full URL
+document.title = "Ban Me - " + currentDomain; // Use `currentURL` if you want the full URL

@@ -35,7 +35,7 @@ func getCompiledRegex() *regexp.Regexp {
 }
 
 // CommonPrefixes contains some common prefixes found in human-readable strings
-var CommonPrefixes = []string{"data", "user", "file", "element", "info", "image", "content", "user", "name", "proj"}
+var CommonPrefixes = []string{"data", "user", "file", "element", "info", "image", "content", "user", "name", "proj", "chil"}
 
 // CommonSuffixes contains some common suffixes found in human-readable strings
 var CommonSuffixes = []string{"ing", "ed", "able", "ment", "tion", "ness", "ize", "ers"}

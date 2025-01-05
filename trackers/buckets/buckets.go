@@ -7,19 +7,21 @@ import (
 )
 
 type BucketStats struct {
-	buckets      []float64 // Upper bounds for buckets
-	bucketCounts []int     // Counts for each bucket
-	totalCalls   int       // Total calls
-	totalTime    float64
-	mutex        sync.Mutex
+	buckets       []float64 // Upper bounds for buckets
+	bucketCounts  []int     // Counts for each bucket
+	totalCalls    int       // Total calls
+	totalTime     float64
+	mutex         sync.Mutex
+	StatusesCount map[int]int
 }
 
 // NewBucketStats initializes a BucketStats instance with the given bucket bounds.
 func NewBucketStats(bucketBounds []float64) *BucketStats {
 	return &BucketStats{
-		buckets:      bucketBounds,
-		bucketCounts: make([]int, len(bucketBounds)+1), // +1 for overflow bucket
-		totalTime:    0.0,
+		buckets:       bucketBounds,
+		bucketCounts:  make([]int, len(bucketBounds)+1), // +1 for overflow bucket
+		totalTime:     0.0,
+		StatusesCount: make(map[int]int),
 	}
 }
 
@@ -40,7 +42,7 @@ func (bs *BucketStats) TotalTime() float64 {
 }
 
 // Record adds a response time to the appropriate bucket.
-func (bs *BucketStats) Record(duration float64) {
+func (bs *BucketStats) Record(duration float64, statusCode int) {
 	bs.mutex.Lock()
 	defer bs.mutex.Unlock()
 	bs.totalTime += duration
@@ -49,12 +51,12 @@ func (bs *BucketStats) Record(duration float64) {
 		if duration <= upperBound {
 			bs.bucketCounts[i]++
 			bs.totalCalls++
-			return
+			break
 		}
 	}
-	// Increment overflow bucket
-	bs.bucketCounts[len(bs.bucketCounts)-1]++
+
 	bs.totalCalls++
+	bs.StatusesCount[statusCode]++
 }
 
 // GetPercentile computes the approximate value for the given percentile (e.g., 50, 95).
@@ -123,6 +125,7 @@ func (pps *PerPathStats) GetAllPercentiles() map[string]map[string]interface{} {
 
 		percentiles["totalTime"] = stats.totalTime
 		percentiles["totalCount"] = trackers.SumArray(stats.bucketCounts)
+		percentiles["statusCount"] = stats.StatusesCount
 
 		result[path] = percentiles
 	}

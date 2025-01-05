@@ -74,9 +74,9 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 			duration := time.Since(start).Seconds()
 
 			stats := perPathStats.GetStatsForPath(cleanedPath)
-			stats.Record(duration)
+			stats.Record(duration, resp.StatusCode)
 
-			bucketStats.Record(duration)
+			bucketStats.Record(duration, resp.StatusCode)
 
 			log.Printf("Access log: method=%s url=%s ip=%s hits=%d status=%v duration=%.3f", r.Method, r.URL.String(), client_ip, hits, resp.StatusCode, duration)
 
@@ -110,6 +110,8 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 			stats["active"] = connnStats.GetActiveConnections()
 			stats["maxActive"] = connnStats.GetMaxActiveConnections()
 		}
+
+		info["percentiles.statusCount"] = bucketStats.StatusesCount
 
 		w.Header().Set("Content-Type", "application/json")
 		jsonData, err := json.MarshalIndent(info, "", "  ")
