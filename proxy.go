@@ -78,7 +78,7 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 
 			bucketStats.Record(duration)
 
-			log.Printf("Access log: method=%s url=%s ip=%s hits=%d status=%v duration=%.3f active=%v", r.Method, r.URL.String(), client_ip, hits, resp.StatusCode, duration)
+			log.Printf("Access log: method=%s url=%s ip=%s hits=%d status=%v duration=%.3f", r.Method, r.URL.String(), client_ip, hits, resp.StatusCode, duration)
 
 			return nil
 		}
