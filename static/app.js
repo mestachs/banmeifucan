@@ -14,7 +14,7 @@ function toTables(keyPrefix, htmlElement, data, excludedKeys) {
   systemKeys.forEach((key) => {
     const row = htmlElement.insertRow();
     row.innerHTML = `<td>${key.replace(keyPrefix, "")}</td><td>${
-      typeof data[key] === 'object' ? JSON.stringify(data[key]) : data[key]
+      typeof data[key] === "object" ? JSON.stringify(data[key]) : data[key]
     }</td>`;
   });
 }
@@ -34,13 +34,17 @@ function populateFilterableTable(table, paths, bucketTimes) {
     "<th class='nowrap'>P 99</th>",
   ]
     .concat(bucketTimes.map((t) => "<th> R " + t + "</th>"))
-    .concat(["<th>Statuses</th>", "</tr></thead>"])
+    .concat([
+      "<th>Statuses</th>",
+      "<th>First seen</th>",
+      "<th>Last seen</th>",
+      "</tr></thead>",
+    ])
     .join(""); // Reset table header
   const tbody = document.createElement("tbody");
   const tbodyElement = table.appendChild(tbody);
   for (let path of Object.keys(paths)) {
     const stats = paths[path];
-    debugger
     const row = tbodyElement.insertRow();
     row.addEventListener("click", () => {
       drawHistogram(bucketTimes, stats["counts"], path);
@@ -56,9 +60,15 @@ function populateFilterableTable(table, paths, bucketTimes) {
       `<td>${stats["98"]}</td>`,
       `<td>${stats["99"]}</td>`,
     ]
-      .concat(stats["counts"].slice(0, stats["counts"].length - 1).map((c) => "<td>" + (c == 0 ? "" : c) + "</td>"))
+      .concat(
+        stats["counts"]
+          .slice(0, stats["counts"].length - 1)
+          .map((c) => "<td>" + (c == 0 ? "" : c) + "</td>")
+      )
       .concat([
         `<td>${JSON.stringify(stats["statusCount"])}</td>`,
+        `<td>${stats["firstSeen"]}</td>`,
+        `<td>${stats["lastSeen"]}</td>`,
       ])
       .join("");
   }
@@ -144,9 +154,10 @@ async function fetchAndDisplayInfo() {
       }
     }
 
+    
     const statuses = Array.from(allStatuses);
     statuses.sort();
-    const columns = ["ip"].concat(statuses);
+    const columns = ["ip"].concat(statuses).concat(["Last seen"]);
 
     ipsElement.innerHTML =
       "<thead><tr>" +
@@ -177,7 +188,7 @@ async function fetchAndDisplayInfo() {
       const others = statuses
         .map((s) => stats[s])
         .map((r) => `<td>${r == undefined ? "" : r}</td>`);
-      row.innerHTML = `<td>${ip}</td>${others.join("")}`;
+      row.innerHTML = `<td>${ip}</td>${others.join("")}<td>${data["lastSeen"][ip]}</td>`;
     }
 
     // Display the data in an element with ID 'info'.

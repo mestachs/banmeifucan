@@ -12,6 +12,7 @@ import (
 type IPTracker struct {
 	mu               sync.Mutex
 	hits             map[string]int
+	lastSeen         map[string]time.Time
 	banned           map[string]time.Time
 	statusCountPerIp map[string]map[int]int
 	threshold        int
@@ -21,6 +22,7 @@ type IPTracker struct {
 func NewIPTracker(threshold int, banDuration time.Duration) *IPTracker {
 	return &IPTracker{
 		hits:             make(map[string]int),
+		lastSeen:         make(map[string]time.Time),
 		banned:           make(map[string]time.Time),
 		statusCountPerIp: make(map[string]map[int]int),
 		threshold:        threshold,
@@ -45,7 +47,6 @@ func (t *IPTracker) CheckBan(ip string) bool {
 func (t *IPTracker) IncrementHit(ip string) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-
 	t.hits[ip]++
 	if t.hits[ip] > t.threshold {
 		t.banned[ip] = time.Now()
@@ -58,6 +59,7 @@ func (t *IPTracker) IncrementStatus(ip string, statusCode int) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	_, exists := t.statusCountPerIp[ip]
+	t.lastSeen[ip] = time.Now()
 
 	if !exists {
 		t.statusCountPerIp[ip] = make(map[int]int)
@@ -137,6 +139,7 @@ func (t *IPTracker) GetTrackerInfo() map[string]interface{} {
 
 	return map[string]interface{}{
 		"hits":               t.hits,
+		"lastSeen":           t.lastSeen,
 		"banned":             t.banned,
 		"statusCountPerIp":   t.statusCountPerIp,
 		"system.memTotalMB":  totalMemoryMB,

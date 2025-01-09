@@ -4,6 +4,7 @@ import (
 	"math"
 	"reverseproxy/trackers"
 	"sync"
+	"time"
 )
 
 type BucketStats struct {
@@ -13,6 +14,8 @@ type BucketStats struct {
 	totalTime     float64
 	mutex         sync.Mutex
 	StatusesCount map[int]int
+	FirstSeen     time.Time `json:"first_seen"`
+	LastSeen      time.Time `json:"last_seen"`
 }
 
 // NewBucketStats initializes a BucketStats instance with the given bucket bounds.
@@ -22,6 +25,7 @@ func NewBucketStats(bucketBounds []float64) *BucketStats {
 		bucketCounts:  make([]int, len(bucketBounds)+1), // +1 for overflow bucket
 		totalTime:     0.0,
 		StatusesCount: make(map[int]int),
+		FirstSeen:     time.Now(),
 	}
 }
 
@@ -54,7 +58,7 @@ func (bs *BucketStats) Record(duration float64, statusCode int) {
 			break
 		}
 	}
-
+	bs.LastSeen = time.Now()
 	bs.totalCalls++
 	bs.StatusesCount[statusCode]++
 }
@@ -126,6 +130,9 @@ func (pps *PerPathStats) GetAllPercentiles() map[string]map[string]interface{} {
 		percentiles["totalTime"] = stats.totalTime
 		percentiles["totalCount"] = trackers.SumArray(stats.bucketCounts)
 		percentiles["statusCount"] = stats.StatusesCount
+
+		percentiles["firstSeen"] = stats.FirstSeen
+		percentiles["lastSeen"] = stats.LastSeen
 
 		result[path] = percentiles
 	}

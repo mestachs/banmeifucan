@@ -21,8 +21,31 @@ import (
 //
 //go:embed static/*
 var staticFiles embed.FS
+var globalAdminPassword string
 
-func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDurantionInMinutes int, modifyHost bool) {
+// AuthMiddleware adds basic authentication to a handler
+func AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Example: Basic Authentication
+		username, password, ok := r.BasicAuth()
+		if !ok || !isValidUser(username, password) {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// Proceed to the next handler if authenticated
+		next.ServeHTTP(w, r)
+	})
+}
+
+// isValidUser validates username and password (dummy implementation)
+func isValidUser(username, password string) bool {
+	return username == "admin" && password == globalAdminPassword
+}
+
+func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDurantionInMinutes int, modifyHost bool, adminPassword string) {
+	globalAdminPassword = adminPassword
 	defer wg.Done()
 
 	tracker := ip.NewIPTracker(hit404threshold, time.Duration(banDurantionInMinutes)*time.Minute) // Ban after x 404s, ban lasts 1 minute
@@ -88,7 +111,7 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 		reverseProxy.ServeHTTP(w, r)
 	})
 
-	http.HandleFunc("/__banme/api/info", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/__banme/api/info", AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		info := tracker.GetTrackerInfo()
 		info["percentiles.buckets"] = bucketStats.Buckets()
 		info["percentiles.bucketCounts"] = bucketStats.BucketCounts()
@@ -120,20 +143,20 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 			log.Printf("Failed to encode debug info: %v", err)
 		}
 		w.Write(jsonData)
-	})
+	})))
 
-	http.HandleFunc("/__banme/api/unban", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/__banme/api/unban", AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tracker.UnbanAll()
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("All IPs have been unbanned."))
-	})
+	})))
 
 	subStaticFS, err := fs.Sub(staticFiles, "static")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	http.Handle("/__banme/", http.StripPrefix("/__banme/", http.FileServer(http.FS(subStaticFS))))
+	http.Handle("/__banme/", AuthMiddleware(http.StripPrefix("/__banme/", http.FileServer(http.FS(subStaticFS)))))
 
 	log.Printf("Reverse proxy is running on :8000 for %s, hit404threshold=%v, banDurantionInMinutes=%v", backendURL, hit404threshold, banDurantionInMinutes)
 	if err := http.ListenAndServe(":8000", nil); err != nil {

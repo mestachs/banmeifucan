@@ -10,4 +10,4 @@ go build -o reverse_proxy .
 go test -coverprofile=coverage.out
 go tool cover -func=coverage.out
 
-BACKEND_URL=http://localhost:8080 ./reverse_proxy -modify-host -disable-ban -hit-404-threshold 10 -ban-duration-in-minutes 1 python ./script/jitter.py
+BANME_ADMIN_PASSWORD=secretsauce BANME_BACKEND_URL=http://localhost:8080 ./reverse_proxy -modify-host -disable-ban -hit-404-threshold 10 -ban-duration-in-minutes 1 python ./script/jitter.py
