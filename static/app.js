@@ -157,7 +157,7 @@ async function fetchAndDisplayInfo() {
     
     const statuses = Array.from(allStatuses);
     statuses.sort();
-    const columns = ["ip"].concat(statuses).concat(["Last seen"]);
+    const columns = ["ip"].concat(statuses).concat(["Last seen", "Links"]);
 
     ipsElement.innerHTML =
       "<thead><tr>" +
@@ -188,7 +188,8 @@ async function fetchAndDisplayInfo() {
       const others = statuses
         .map((s) => stats[s])
         .map((r) => `<td>${r == undefined ? "" : r}</td>`);
-      row.innerHTML = `<td>${ip}</td>${others.join("")}<td>${data["lastSeen"][ip]}</td>`;
+      row.innerHTML = `<td>${ip}</td>${others.join("")}<td>${data["lastSeen"][ip]}</td>
+      <td><a href='https://ipinfo.io/${ip}'>ipinfo</a> <a href='https://www.abuseipdb.com/check/${ip}'>abuseip</a></td>`;
     }
 
     // Display the data in an element with ID 'info'.

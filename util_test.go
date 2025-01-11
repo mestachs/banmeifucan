@@ -25,6 +25,8 @@ func TestCleanPath(t *testing.T) {
 		{"/export_requests/2", "/export_requests/{id}"},
 		{"/projects/2/issues", "/projects/{id}/issues"},
 		{"/projects/2/issues/18", "/projects/{id}/issues/{id}"},
+		{"/transform/xform/OyanEbca", "/transform/xform/OyanEbca"},
+		{"/transform/xform/xXeYccbp", "/transform/xform/xXeYccbp"},
 	}
 
 	for _, tt := range tests {

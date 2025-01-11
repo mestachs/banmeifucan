@@ -14,6 +14,11 @@ We tried various thing but not something really fitting this basic use case
 
 It's hard to say if these bot are all malcious or just "crawling" the internet but some clearly were bad one.
 
+Then it evolved into a proxy to get more comprehension on what going through the server like 
+- which api endpoint,
+- ranges of times
+- approximate percentiles
+- currently active, most active endpoints
 
 # Dev
 
@@ -41,18 +46,23 @@ ali http://127.0.0.1:8000/fonts/456454
 
 
 TODO
-  - [x]test it on a real server ;)
-  - [ ] add a token to unban
+  - [x] test it on a real server ;)
+  - [x] add a token to basic auth
   - [x] add a small dashboard
   - [x] add tracking of percentiles by path (handle rest api in a certain form)
   - [x] make threshold and banDuration adjustable
   - [x] keep track of other errors status (409, 50x)- 
+  - [ ] unify args, env variables and yaml config https://github.com/spf13/viper
   - [ ] allow whitelist
   - [ ] allow predefined rules (ban .env, php, java,...)
   - [ ] detect if ip is from a hosting
     - AWS : https://ip-ranges.amazonaws.com/ip-ranges.json
     - GCP : https://www.gstatic.com/ipranges/cloud.json
     - list of other hosting services : https://github.com/femueller/cloud-ip-ranges/tree/master
+  - [ ] add info about ip
+  - [ ] add regular cleanup (check last seen and prune if too much values)
+  - [ ] keep last x requests per endpoint ?
+  - [ ] keep statistics of request per minutes (perhaps a kind of load average , last 1, 5, 15 minutes ?)
 
 
 ## Release
