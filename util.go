@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 	"unicode"
+
+	"github.com/ccojocar/randdetect"
 )
 
 // Cached regex patterns
@@ -110,6 +112,11 @@ func containsLettersAndNumbers(s string) bool {
 
 // CheckStringPattern checks if the string follows common linguistic patterns
 func CheckStringPattern(s string) bool {
+
+	ok := randdetect.IsRandom(s)
+	if ok {
+		return false
+	}
 
 	if containsLettersAndNumbers(s) {
 		return false
