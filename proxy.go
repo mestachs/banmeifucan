@@ -3,12 +3,14 @@ package main
 import (
 	"embed"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"reverseproxy/diagnoses/pg"
 	"strings"
 	"time"
 
@@ -143,6 +145,21 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 			log.Printf("Failed to encode debug info: %v", err)
 		}
 		w.Write(jsonData)
+	})))
+
+	http.Handle("/__banme/api/diagnose/pg", AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		diagnoseData, err := pg.GetPgDiagnose()
+		if err != nil {
+			log.Printf("diagnoseData %v, err %v", diagnoseData, err)
+			http.Error(w, "Failed to fetch debug info", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(diagnoseData); err != nil {
+			log.Printf("diagnoseData %v, err %v", diagnoseData, err)
+			http.Error(w, fmt.Sprintf("Failed to encode JSON: %v", err), http.StatusInternalServerError)
+			return
+		}
 	})))
 
 	http.Handle("/__banme/api/unban", AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
