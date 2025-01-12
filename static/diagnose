@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ban Me - Diagnoses</title>
+    <!-- React and ReactDOM -->
+    <script
+      src="https://unpkg.com/react@17/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"
+      crossorigin
+    ></script>
+    <!-- Babel Standalone -->
+    <script
+      src="https://unpkg.com/@babel/standalone/babel.min.js"
+      crossorigin
+    ></script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const App = () => {
+        const [diagnostic, setDiagnostic] = React.useState(undefined);
+        const [loading, setLoading] = React.useState(false);
+        React.useEffect(() => {
+          setLoading(true);
+          fetch("./api/diagnose/pg")
+            .then((response) => response.json())
+            .then((json) => setDiagnostic(json))
+            .finally(() => {
+              setLoading(false);
+            });
+        }, []);
+
+        return (
+          <div>
+            <h2>PG diagnose</h2>
+            {diagnostic && (
+              <div>
+                <p>{diagnostic.db_info.pg_version}</p>
+                <p>{diagnostic.db_info.postgis_version}</p>
+                <p>{diagnostic.db_info.db_size}</p>
+              </div>
+            )}
+            {diagnostic && (
+              <table>
+                <theader>
+                  <tr>
+                  <th>state</th>
+                  <th>query</th>
+                  </tr>
+                </theader>
+                <tbody>
+                  {diagnostic.pg_stat_activities.map((line) => (
+                    <tr>
+                      <td>{line.state}</td>
+                      <td>{line.query}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        );
+      };
+
+      ReactDOM.render(<App />, document.getElementById("root"));
+    </script>
+  </body>
+</html>
