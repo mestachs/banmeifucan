@@ -18,6 +18,8 @@
       src="https://unpkg.com/@babel/standalone/babel.min.js"
       crossorigin
     ></script>
+    <link rel="stylesheet" href="./app.css" />
+    <title>Ban Me</title>
   </head>
   <body>
     <div id="root"></div>
@@ -48,17 +50,21 @@
             )}
             {diagnostic && (
               <table>
-                <theader>
+                <thead>
                   <tr>
-                  <th>state</th>
-                  <th>query</th>
+                    <th>pid</th>
+                    <th>state</th>
+                    <th>query</th>
+                    <th>query start</th>
                   </tr>
-                </theader>
+                </thead>
                 <tbody>
                   {diagnostic.pg_stat_activities.map((line) => (
-                    <tr>
+                    <tr key={line.pid}>
+                      <td>{line.pid}</td>
                       <td>{line.state}</td>
                       <td>{line.query}</td>
+                      <td>{line.query_start}</td>
                     </tr>
                   ))}
                 </tbody>

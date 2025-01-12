@@ -1,0 +1,72 @@
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  margin: 20px;
+  background-color: #f9f9f9;
+  color: #333;
+  line-height: 1;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+}
+/* Styling to align tables side by side */
+.row {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+/* Media query for small screens */
+@media (max-width: 900px) {
+  .row {
+    flex-wrap: wrap; /* Ensures items wrap to the next line on small screens */
+    flex-direction: column; /* Stacks items vertically */
+  }
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+input {
+  margin-bottom: 4px;
+}
+table,
+th,
+td {
+  border: 1px solid black;
+}
+th,
+td {
+  padding: 8px;
+  text-align: left;
+  height: 12px;
+}
+tr {
+  height: 12px;
+}
+.search-row {
+  margin-top: 20px;
+}
+th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+tr:hover {
+  background-color: #f1f1f1;
+}
+th.sort-asc::after {
+  content: " ▲";
+}
+th.sort-desc::after {
+  content: " ▼";
+}
+.info-status-by-ip {
+  margin-top: 10px;
+}
+.nowrap {
+  white-space: nowrap;
+}
