@@ -59,14 +59,16 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {diagnostic.pg_stat_activities.map((line) => (
-                    <tr key={line.pid}>
-                      <td>{line.pid}</td>
-                      <td>{line.state}</td>
-                      <td>{line.query}</td>
-                      <td>{line.query_start}</td>
-                    </tr>
-                  ))}
+                  {diagnostic.pg_stat_activities
+                    .filter((line) => line.query !== "")
+                    .map((line) => (
+                      <tr key={line.pid}>
+                        <td>{line.pid}</td>
+                        <td>{line.state}</td>
+                        <td>{line.query}</td>
+                        <td>{line.query_start}</td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             )}
