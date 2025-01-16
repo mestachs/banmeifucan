@@ -25,7 +25,7 @@ var (
 func getCompiledRegex() *regexp.Regexp {
 	compiledRegexOnce.Do(func() {
 		// Combine the patterns into a single regular expression
-		combinedPattern := fmt.Sprintf("^(%s|%s|%s|%s)$", uuidPattern, longIntPattern, enketoUidPattern, dhis2UidPattern)
+		combinedPattern := fmt.Sprintf("^(%s|%s|%s|%s)(?:\\.json|\\.pdf|\\.csv|\\.xml)?$", uuidPattern, longIntPattern, enketoUidPattern, dhis2UidPattern)
 		var err error
 		log.Printf("{id} identification pattern %s", combinedPattern)
 		compiledRegex, err = regexp.Compile(combinedPattern)

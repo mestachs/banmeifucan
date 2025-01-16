@@ -4,30 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ban Me - Diagnoses</title>
-    <!-- React and ReactDOM -->
-    <script
-      src="https://unpkg.com/react@17/umd/react.development.js"
-      crossorigin
-    ></script>
-    <script
-      src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"
-      crossorigin
-    ></script>
-    <!-- Babel Standalone -->
-    <script
-      src="https://unpkg.com/@babel/standalone/babel.min.js"
-      crossorigin
-    ></script>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://unpkg.com/prop-types@15.6.0/prop-types.min.js"></script>
+    <script src="https://unpkg.com/ag-grid-community@27.0.0/dist/ag-grid-community.js"></script>
+    <script src="https://unpkg.com/ag-grid-react@27.0.0/bundles/ag-grid-react.min.js"></script>
+    <link rel="icon" href="./favicon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="./app.css" />
-    <title>Ban Me</title>
   </head>
   <body>
     <div id="root"></div>
 
     <script type="text/babel">
       const App = () => {
+        const gridRef = React.useRef(null);
         const [diagnostic, setDiagnostic] = React.useState(undefined);
         const [loading, setLoading] = React.useState(false);
+        
         React.useEffect(() => {
           setLoading(true);
           fetch("./api/diagnose/pg")
@@ -38,8 +32,17 @@
             });
         }, []);
 
+        const onFilterTextBoxChanged = React.useCallback(() => {
+          gridRef.current.api.setQuickFilter(
+            document.getElementById("filter-text-box").value
+          );
+        }, []);
+
         return (
-          <div>
+          <div
+            className="ag-theme-alpine"
+            style={{ width: "100%", height: "100%" }}
+          >
             <h2>PG diagnose</h2>
             {diagnostic && (
               <div>
@@ -48,29 +51,36 @@
                 <p>{diagnostic.db_info.db_size}</p>
               </div>
             )}
+
+            <div>
+              <span>Quick Filter:</span>
+              <input
+                type="text"
+                id="filter-text-box"
+                placeholder="Filter..."
+                onInput={onFilterTextBoxChanged}
+              />
+            </div>
+
             {diagnostic && (
-              <table>
-                <thead>
-                  <tr>
-                    <th>pid</th>
-                    <th>state</th>
-                    <th>query</th>
-                    <th>query start</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {diagnostic.pg_stat_activities
-                    .filter((line) => line.query !== "")
-                    .map((line) => (
-                      <tr key={line.pid}>
-                        <td>{line.pid}</td>
-                        <td>{line.state}</td>
-                        <td>{line.query}</td>
-                        <td>{line.query_start}</td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+              <AgGridReact.AgGridReact
+                ref={gridRef}
+                rowData={diagnostic.pg_stat_activities}
+                defaultColDef={{
+                  sortable: true,
+                  autoHeight: true,
+                }}
+                autoSizeStrategy={{
+                  type: "fitGridWidth",
+                  defaultMinWidth: 100,
+                }}
+                columnDefs={[
+                  { field: "pid" },
+                  { field: "state" },
+                  { field: "query", minWidth: 900 },
+                  { field: "query_start", minWidth: 350 },
+                ]}
+              />
             )}
           </div>
         );

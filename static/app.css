@@ -7,6 +7,7 @@ body {
   font-size: 12px;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
 }
 /* Styling to align tables side by side */
 .row {

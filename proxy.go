@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"reverseproxy/diagnoses/pg"
 	"strings"
 	"time"
@@ -168,12 +169,25 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 		w.Write([]byte("All IPs have been unbanned."))
 	})))
 
-	subStaticFS, err := fs.Sub(staticFiles, "static")
-	if err != nil {
-		log.Fatal(err)
+	isDev := os.Getenv("DEV_MODE") == "true"
+
+	var fsHandler http.Handler
+
+	if isDev {
+		// Serve directly from the filesystem in development mode
+		fsHandler = http.StripPrefix("/__banme/", http.FileServer(http.Dir("./static")))
+		log.Println("Serving static files from filesystem (dev mode)")
+	} else {
+		// Use embedded files in production mode
+		subStaticFS, err := fs.Sub(staticFiles, "static")
+		if err != nil {
+			log.Fatal(err)
+		}
+		fsHandler = http.StripPrefix("/__banme/", http.FileServer(http.FS(subStaticFS)))
+		log.Println("Serving static files from embedded resources (prod mode)")
 	}
 
-	http.Handle("/__banme/", AuthMiddleware(http.StripPrefix("/__banme/", http.FileServer(http.FS(subStaticFS)))))
+	http.Handle("/__banme/", AuthMiddleware(fsHandler))
 
 	log.Printf("Reverse proxy is running on :8000 for %s, hit404threshold=%v, banDurantionInMinutes=%v", backendURL, hit404threshold, banDurantionInMinutes)
 	if err := http.ListenAndServe(":8000", nil); err != nil {

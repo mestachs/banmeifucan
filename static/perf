@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ban Me - Diagnoses</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://unpkg.com/prop-types@15.6.0/prop-types.min.js"></script>
+    <script src="https://unpkg.com/ag-grid-community@27.0.0/dist/ag-grid-community.js"></script>
+    <script src="https://unpkg.com/ag-grid-react@27.0.0/bundles/ag-grid-react.min.js"></script>
+    <link rel="icon" href="./favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="./app.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const BasicTable = ({
+        style,
+        rowData,
+        columnDefs,
+        frameworkComponents,
+        onRowClicked,
+      }) => {
+        const gridRef = React.useRef(null);
+        const [filterText, setFilterText] = React.useState("");
+
+        const onFilterTextBoxChanged = (event) => {
+          setFilterText(event.target.value);
+          gridRef.current.api.setQuickFilter(event.target.value);
+        };
+        return (
+          <div style={style}>
+            <div>
+              <span>Quick Filter:</span>
+              <input
+                type="text"
+                id="filter-text-box"
+                placeholder="Filter..."
+                value={filterText}
+                onChange={onFilterTextBoxChanged}
+              />
+            </div>
+            <AgGridReact.AgGridReact
+              ref={gridRef}
+              domLayout="autoHeight"
+              rowData={rowData}
+              onRowClicked={onRowClicked}
+              defaultColDef={{
+                sortable: true,
+                autoHeight: true,
+                resizable: true,
+              }}
+              onGridReady={(g) => g.api.sizeColumnsToFit()}
+              autoSizeStrategy={{
+                type: "fitCellContents",
+                skipHeader: true,
+                skipHeaderOnAutoSize: true,
+              }}
+              columnDefs={columnDefs}
+              frameworkComponents={frameworkComponents}
+            />
+          </div>
+        );
+      };
+
+      function LinkComponent({ ip }) {
+        return (
+          <div>
+            <a href="https://ipinfo.io/${ip}">ipinfo</a>&nbsp;&nbsp;
+            <a href="https://www.abuseipdb.com/check/${ip}">abuseip</a>
+          </div>
+        );
+      }
+
+      function JsonComponent(data) {
+        const message = [];
+        for (let status of Object.keys(data.data.statusCount)) {
+          message.push(status + " -> " + data.data.statusCount[status]);
+        }
+        return <pre>{message.join("\n")}</pre>;
+      }
+
+      function Histogram({ bucketTimes, counts, title }) {
+        // Maximum bar length
+        const maxBarLength = 50; // Adjust this for wider bars
+        const maxCount = Math.max(...counts);
+        // Pad seconds to the same width
+        const paddedTimes = bucketTimes.map((time) =>
+          time.toFixed(2).padStart(6, " ")
+        );
+
+        // Generate the ASCII bar chart
+        let chart = paddedTimes
+          .map((time, index) => {
+            const barLength = Math.round(
+              (counts[index] / maxCount) * maxBarLength
+            );
+            const bar = "#".repeat(barLength);
+            return `${time} s | ${bar} ${counts[index]}`;
+          })
+          .join("\n");
+
+        return (
+          <div>
+            {title}
+            <pre>{chart}</pre>
+          </div>
+        );
+      }
+
+      function toRecords(keyPrefix, data, excludedKeys) {
+        // Filter keys starting with "system."
+        const systemKeys = Object.keys(data)
+          .filter((key) => key.startsWith(keyPrefix))
+          .filter((k) => !excludedKeys.includes(k));
+
+        const records = [];
+        for (let systemKey of systemKeys) {
+          records.push({
+            key: systemKey.replace(keyPrefix, ""),
+            value: data[systemKey],
+          });
+        }
+        return records;
+      }
+
+      const App = () => {
+        const [perfInfos, setPerfInfos] = React.useState(undefined);
+        const [loading, setLoading] = React.useState(false);
+        const [selectedBucketInfo, setSelectedBucketInfo] =
+          React.useState(undefined);
+
+        React.useEffect(() => {
+          setLoading(true);
+          fetch("./api/info")
+            .then((response) => response.json())
+            .then((json) => {
+              const perfs = [];
+              for (let path of Object.keys(json["percentiles.byPath"])) {
+                const stats = json["percentiles.byPath"][path];
+                let record = {
+                  path,
+                  ...stats,
+                };
+                let index = 1;
+                for (let bucketRange of json["percentiles.buckets"]) {
+                  if (stats["counts"][index] !== 0) {
+                    record[("R" + bucketRange).replace(".", "_")] =
+                      stats["counts"][index];
+                  }
+                  index = index + 1;
+                }
+                perfs.push(record);
+              }
+              json["perfByPath"] = perfs;
+
+              const ipInfos = [];
+              for (let ip of Object.keys(json.statusCountPerIp)) {
+                ipInfos.push({
+                  ip,
+                  ...json.statusCountPerIp[ip],
+                  lastSeen: json.lastSeen[ip],
+                });
+              }
+
+              const allStatuses = new Set();
+              for (let ip of Object.keys(json.statusCountPerIp)) {
+                const stats = json.statusCountPerIp[ip];
+                for (let status of Object.keys(stats)) {
+                  allStatuses.add(status);
+                }
+              }
+
+              const statuses = Array.from(allStatuses);
+              statuses.sort();
+
+              json["ipInfos"] = ipInfos;
+              json["allStatuses"] = statuses;
+
+              json["systemInfos"] = toRecords("system.", json, []);
+              json["percentilesInfos"] = toRecords("percentiles.", json, [
+                "percentiles.byPath",
+                "percentiles.buckets",
+                "percentiles.bucketCounts",
+                "percentiles.statusCount",
+              ]);
+              json["percentilesInfos"].push({
+                key: "status count",
+                value: JSON.stringify(json["percentiles.statusCount"]),
+              });
+              setSelectedBucketInfo({
+                counts: json["percentiles.bucketCounts"],
+                title: "general",
+              });
+              setPerfInfos(json);
+            })
+            .finally(() => {
+              setLoading(false);
+            });
+        }, []);
+
+        const onRowClicked = (data) => {
+          debugger;
+          setSelectedBucketInfo({
+            counts: data.data.counts,
+            title: data.data.path,
+          });
+        };
+        return (
+          <div className="ag-theme-balham" style={{ width: "100%" }}>
+            <h1>Ban {loading && "Loading !"}</h1>
+            {perfInfos && (
+              <div class="row">
+                <BasicTable
+                  rowData={perfInfos.systemInfos}
+                  columnDefs={[{ field: "key" }, { field: "value" }]}
+                  style={{ width: "700px" }}
+                />
+                <BasicTable
+                  rowData={perfInfos.percentilesInfos}
+                  columnDefs={[{ field: "key" }, { field: "value" }]}
+                />
+                {selectedBucketInfo && (
+                  <Histogram
+                    counts={selectedBucketInfo.counts}
+                    bucketTimes={perfInfos["percentiles.buckets"]}
+                    title={selectedBucketInfo.title}
+                  />
+                )}
+              </div>
+            )}
+            {perfInfos && (
+              <BasicTable
+                rowData={perfInfos.perfByPath}
+                frameworkComponents={{ JsonComponent }}
+                onRowClicked={onRowClicked}
+                columnDefs={[
+                  { field: "path" },
+                  { field: "active" },
+                  { field: "maxActive" },
+                  { field: "totalCount" },
+                  { field: "totalTime" },
+                  { field: "50", headerName: "P50" },
+                  { field: "90", headerName: "P90" },
+                  { field: "95", headerName: "P95" },
+                  { field: "98", headerName: "P98" },
+                  { field: "99", headerName: "P99" },
+                ]
+                  .concat(
+                    perfInfos["percentiles.buckets"].map((f) => {
+                      return {
+                        field: ("R" + f).replace(".", "_"),
+                        headerName: "R " + f,
+                      };
+                    })
+                  )
+                  .concat([
+                    { field: "status", cellRenderer: "JsonComponent" },
+                    { field: "firstSeen" },
+                    { field: "lastSeen" },
+                  ])}
+              />
+            )}
+            <br />
+            {perfInfos && (
+              <BasicTable
+                rowData={perfInfos.ipInfos}
+                frameworkComponents={{ LinkComponent }}
+                columnDefs={[{ field: "ip" }]
+                  .concat(
+                    perfInfos.allStatuses.map((s) => {
+                      return { field: s };
+                    })
+                  )
+                  .concat([
+                    { field: "lastSeen" },
+                    {
+                      field: "abuse",
+                      cellRenderer: "LinkComponent",
+                    },
+                  ])}
+              />
+            )}
+          </div>
+        );
+      };
+      ReactDOM.render(<App />, document.getElementById("root"));
+    </script>
+  </body>
+</html>
