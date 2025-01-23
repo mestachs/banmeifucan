@@ -18,6 +18,7 @@ import (
 	"reverseproxy/trackers/active"
 	"reverseproxy/trackers/buckets"
 	"reverseproxy/trackers/ip"
+	"reverseproxy/trackers/lastrequests"
 )
 
 // Embed the entire "static" folder.
@@ -47,9 +48,19 @@ func isValidUser(username, password string) bool {
 	return username == "admin" && password == globalAdminPassword
 }
 
+// Helper function to determine if the request is HTTP or HTTPS
+func getScheme(r *http.Request) string {
+	if r.TLS != nil {
+		return "https"
+	}
+	return "http"
+}
+
 func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDurantionInMinutes int, modifyHost bool, adminPassword string) {
 	globalAdminPassword = adminPassword
 	defer wg.Done()
+
+	ringBuffer := lastrequests.NewRingBuffer(50)
 
 	tracker := ip.NewIPTracker(hit404threshold, time.Duration(banDurantionInMinutes)*time.Minute) // Ban after x 404s, ban lasts 1 minute
 
@@ -88,7 +99,9 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 		cleanedPath := CleanPath(r.URL.Path)
 
 		connStats := active.RecordActiveConnection(cleanedPath)
-
+		defer func() {
+			connStats.StopActiveConnection()
+		}()
 		reverseProxy := httputil.NewSingleHostReverseProxy(backendURL)
 		reverseProxy.ModifyResponse = func(resp *http.Response) error {
 			if resp.StatusCode == http.StatusNotFound {
@@ -102,15 +115,24 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 			stats := perPathStats.GetStatsForPath(cleanedPath)
 			stats.Record(duration, resp.StatusCode)
 
+			fullURL := fmt.Sprintf("%s://%s%s", getScheme(r), r.Host, r.URL.RequestURI())
+			request := lastrequests.RequestInfo{
+				FullURL:    fullURL,
+				StatusCode: resp.StatusCode,
+				UserAgent:  r.Header.Get("User-Agent"),
+				StartTime:  start,
+				Duration:   duration,
+				Ip:         client_ip,
+			}
+
+			ringBuffer.Add(request)
+
 			bucketStats.Record(duration, resp.StatusCode)
 
 			log.Printf("Access log: method=%s url=%s ip=%s hits=%d status=%v duration=%.3f", r.Method, r.URL.String(), client_ip, hits, resp.StatusCode, duration)
 
 			return nil
 		}
-		defer func() {
-			connStats.StopActiveConnection()
-		}()
 		reverseProxy.ServeHTTP(w, r)
 	})
 
@@ -138,7 +160,7 @@ func serve(backendURL *url.URL, disableBan bool, hit404threshold int, banDuranti
 		}
 
 		info["percentiles.statusCount"] = bucketStats.StatusesCount
-
+		info["lastRequests"] = ringBuffer.GetAll()
 		w.Header().Set("Content-Type", "application/json")
 		jsonData, err := json.MarshalIndent(info, "", "  ")
 		if err != nil {

@@ -50,17 +50,16 @@ func (bs *BucketStats) Record(duration float64, statusCode int) {
 	bs.mutex.Lock()
 	defer bs.mutex.Unlock()
 	bs.totalTime += duration
-
-	for i, upperBound := range bs.buckets {
-		if duration <= upperBound {
-			bs.bucketCounts[i]++
-			bs.totalCalls++
-			break
-		}
-	}
 	bs.LastSeen = time.Now()
 	bs.totalCalls++
 	bs.StatusesCount[statusCode]++
+	for i, upperBound := range bs.buckets {
+		if duration <= upperBound {
+			bs.bucketCounts[i]++
+			return
+		}
+	}
+
 }
 
 // GetPercentile computes the approximate value for the given percentile (e.g., 50, 95).

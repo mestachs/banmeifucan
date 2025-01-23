@@ -18,6 +18,7 @@
 
     <script type="text/babel">
       const BasicTable = ({
+        name,
         style,
         rowData,
         columnDefs,
@@ -34,6 +35,7 @@
         return (
           <div style={style}>
             <div>
+              <h3>{name}</h3>
               <span>Quick Filter:</span>
               <input
                 type="text"
@@ -173,6 +175,7 @@
                   allStatuses.add(status);
                 }
               }
+              json.lastRequests.reverse()
 
               const statuses = Array.from(allStatuses);
               statuses.sort();
@@ -203,7 +206,7 @@
         }, []);
 
         const onRowClicked = (data) => {
-          debugger;
+    
           setSelectedBucketInfo({
             counts: data.data.counts,
             title: data.data.path,
@@ -211,7 +214,7 @@
         };
         return (
           <div className="ag-theme-balham" style={{ width: "100%" }}>
-            <h1>Ban {loading && "Loading !"}</h1>
+            <h1>Ban Me ! {loading && "Loading !"}</h1>
             {perfInfos && (
               <div class="row">
                 <BasicTable
@@ -234,6 +237,7 @@
             )}
             {perfInfos && (
               <BasicTable
+                name="Perf per path"
                 rowData={perfInfos.perfByPath}
                 frameworkComponents={{ JsonComponent }}
                 onRowClicked={onRowClicked}
@@ -267,6 +271,7 @@
             <br />
             {perfInfos && (
               <BasicTable
+                name="Clients"
                 rowData={perfInfos.ipInfos}
                 frameworkComponents={{ LinkComponent }}
                 columnDefs={[{ field: "ip" }]
@@ -284,6 +289,21 @@
                   ])}
               />
             )}
+        <br />
+            {perfInfos && (
+              <BasicTable
+                name="Last requests"
+                rowData={perfInfos.lastRequests}    
+                columnDefs={[
+                  { field: "fullURL" },
+                  { field: "statusCode" },
+                  { field: "duration" },
+                  { field: "startTime" },
+                  { field: "ip" },
+                  { field: "userAgent" },
+                  ]}
+              />
+            )}            
           </div>
         );
       };
